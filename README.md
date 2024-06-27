@@ -8,7 +8,7 @@ Preprocessing part: Data Reading and formatting, dropping of non relevant featur
 Analysis part: Survival Curves, Models Training and Validation, XAI(t).
 The python libraries requested are:
 
-pandas, torch, pycox, reticulate, numpy, seaborn, scipy, statsmodels, scikit-learn
+-_pandas, torch, pycox, reticulate, numpy, seaborn, scipy, statsmodels, scikit-learn_
 The R libraries requested are:
 
-survival, surviminer, survex, randomForestSRC, gbm, survivalsvm, ggsurvfit, ggplot2, pec, caret, SurvMetrics, mlr3proba, mlr3extralearners, mlr3pipelines, survivalmodels, reticulate
+-_survival, surviminer, survex, randomForestSRC, gbm, survivalsvm, ggsurvfit, ggplot2, pec, caret, SurvMetrics, mlr3proba, mlr3extralearners, mlr3pipelines, survivalmodels, reticulate_
