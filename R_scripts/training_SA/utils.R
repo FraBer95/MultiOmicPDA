@@ -103,6 +103,10 @@ save_ws <- function(model, RADIOMICS, CLINICAL, GENOMIC, OS) {
 
   if (model == 'survGBM'){
       posizione <- file.path(base_path, "GBM")
+    } else if (model == 'coxPH'){
+      posizione <- file.path(base_path, "coxPH")
+    } else if (model == 'survRF'){
+      posizione <- file.path(base_path, "survRF")
     } else {posizione <- file.path(base_path,"SVM") }
 
     if (RADIOMICS) {
