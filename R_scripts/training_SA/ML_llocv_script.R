@@ -20,12 +20,11 @@ library(mlr3proba)
 
 source("./Radiomics/utils.R")
 
-use_condaenv("E:\\Users\\Berloco\\anaconda3\\envs\\survEnv", required = TRUE)
+use_condaenv("path_to_conda_env", required = TRUE)
 
-py_set_seed(1969)
-set.seed(1969)
+set_seed(1969, 1969, 1969)
 
-
+#set true or false according to the analysis
 OS <- FALSE
 REC <- TRUE
 
@@ -43,9 +42,19 @@ flag_combs <- expand.grid(RADIOMICS, CLINICAL, GENOMIC)
 gbm <- lrn("surv.gbm", n.trees=100, interaction.depth = 10, bag.fraction=0.9, shrinkage=0.001)
 svm <- lrn("surv.svm", type = "vanbelle2", diff.meth = "makediff3", gamma.mu = 0.2)
 
+cox <- coxph(Surv(data$time,data$status)~ ., data)
+cox$id <- "coxph"
+
+formula <- Surv(time, status) ~ .
+rfs <- rfsrc(formula, data = data)
+rfs$id <- "rfs"
+
+
 learners <- list()
-learners[[1]] <- svm
-learners[[2]] <- gbm
+learners[[1]] <- cox
+learners[[2]] <- rfs
+learners[[3]] <- svm
+learners[[4]] <- gbm
 
 #dataframe with overall perfomance
 df_perf <- data.frame(
@@ -104,56 +113,84 @@ for (learner in learners) {
         print(paste("Iteration n.",i,"of", dim(dta)[1], sep = " "))
 
 
+
         dta_LOOCV <- dta[-i,]
-        time <- dta_LOOCV$time
-        status <- dta_LOOCV$status
-
-        train_task <- as_task_surv(x = dta_LOOCV,
-                                 time = "time",
-                                 event = "status")
+        #time <- dta_LOOCV$time
+        #status <- dta_LOOCV$status
 
 
-        composite_learner <- as_learner(ppl(
-          "distrcompositor",
-          learner = learner,
-          estimator = "kaplan",
-          form = "ph"))
-
-        composite_learner$train(train_task)
-
-        class(composite_learner) <- c(class(composite_learner), "LearnerSurv")
-
-        if (learner$id == "surv.svm"){
-
-                model_name <- "survSVM"
-
-                svm_predict <- function(model, newdata, times) {
-                    if (nrow(newdata) == 1){
-                        newdata <- rbind(newdata, newdata)
-                        t(model$predict_newdata(newdata)$distr$survival(times))[1, , drop=FALSE]
-                    }
-                    else{
-                        t(model$predict_newdata(newdata)$distr$survival(times))
-                    }
-                }
-
-                model_explainer <- survex::explain(composite_learner,
-                                          data = dta_LOOCV[, -c(1,2)],
-                                          y = Surv(dta_LOOCV$time, dta_LOOCV$status),
-                                          predict_survival_function = svm_predict,
-                                          label = paste0(model_name, "Explainer", sep = " "),
-                                          verbose = FALSE)
-
-        } else {
-
-          model_name <- "survGBM"
-          model_explainer <- survex::explain(composite_learner,
+         if (learner$id == 'coxph')
+        {
+          model_name <- "coxPH"
+          learner <- coxph(Surv(dta_LOOCV$time, dta_LOOCV$status)~ ., dta_LOOCV, x=TRUE, model=TRUE)
+          model_explainer <- survex::explain(learner,
                                           data = dta_LOOCV[, -c(1,2)],
                                           y = Surv(dta_LOOCV$time, dta_LOOCV$status),
                                           label = paste0(model_name, "Explainer", sep = " "),
                                           verbose = FALSE)
+        }
+        else if (learner$id == 'rfs'){
 
-          }
+          model_name <- "survRF"
+          formula <- Surv(time, status) ~ .
+          learner <- rfsrc(formula, data = dta_LOOCV,  ntree = 500)
+
+          learner$id <- "rfs"
+          rf_explainer_test <- survex::explain(learner,data = dta_LOOCV[,-c(1,2)],
+                                        y = survival::Surv(dta_LOOCV$time, dta_LOOCV$status),
+                                        verbose=FALSE)
+
+         }
+
+        else {
+
+          train_task <- as_task_surv(x = dta_LOOCV,
+                                   time = "time",
+                                   event = "status")
+
+
+          composite_learner <- as_learner(ppl(
+            "distrcompositor",
+            learner = learner,
+            estimator = "kaplan",
+            form = "ph"))
+
+          composite_learner$train(train_task)
+
+          class(composite_learner) <- c(class(composite_learner), "LearnerSurv")
+
+          if (learner$id == "surv.svm"){
+
+                  model_name <- "survSVM"
+
+                  svm_predict <- function(model, newdata, times) {
+                      if (nrow(newdata) == 1){
+                          newdata <- rbind(newdata, newdata)
+                          t(model$predict_newdata(newdata)$distr$survival(times))[1, , drop=FALSE]
+                      }
+                      else{
+                          t(model$predict_newdata(newdata)$distr$survival(times))
+                      }
+                  }
+
+                  model_explainer <- survex::explain(composite_learner,
+                                            data = dta_LOOCV[, -c(1,2)],
+                                            y = Surv(dta_LOOCV$time, dta_LOOCV$status),
+                                            predict_survival_function = svm_predict,
+                                            label = paste0(model_name, "Explainer", sep = " "),
+                                            verbose = FALSE)
+
+          } else {
+
+            model_name <- "survGBM"
+            model_explainer <- survex::explain(composite_learner,
+                                            data = dta_LOOCV[, -c(1,2)],
+                                            y = Surv(dta_LOOCV$time, dta_LOOCV$status),
+                                            label = paste0(model_name, "Explainer", sep = " "),
+                                            verbose = FALSE)
+
+            }
+         }
 
         #Performance on training
         perf <- model_performance(model_explainer)
