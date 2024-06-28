@@ -30,7 +30,7 @@ if __name__=='__main__':
 
     for label in target_list:
         print(f"Launching experiment w.r.t. {label}")
-        # create directory for each label
+        #create directory for each label
         path_with_label = os.path.join('../logs', label)
         if not IV_stages: path_with_label = os.path.join(path_with_label, "no_4stages")
         else: path_with_label = os.path.join(path_with_label, "4stages")
@@ -59,7 +59,7 @@ if __name__=='__main__':
         df_train_full = add_duplicates(df_with_dup, ids_train)
         y_train_full = df_train_full[label]
 
-        if loocv:
+        if loocv:  #a patient can have more series, so they must be in the same split
             df_test = add_duplicates(df_with_dup, ids_test)
             y_test_full = df_test[label]
             df_train_full = pd.concat([df_train_full, df_test], axis=0)
@@ -73,40 +73,13 @@ if __name__=='__main__':
 
         #statistical_test(df_train_full, label, path_with_label)
 
-
-
         feature_AUC = None
         training_features = pearson_corr(df_train_full, feature_AUC, path_with_label, IV_stages)
         training_features.append("patient_id")
         training_features.append("status")
 
 
-        if multimodal:
-            print("Loading mutations and clinical datasets...")
-            clin_data = pd.read_csv('/Volumes/ExtremeSSD/pycharmProg/pancreas2/RadiomicsPanc/data/clinical/clin_data.csv')
-            mut_data = pd.read_csv('/Volumes/ExtremeSSD/pycharmProg/pancreas2/RadiomicsPanc/data/RNA-Seq/mutations.csv')
-            df_train = merge_datasets(df_train_full[training_features], clin_data, mut_data, IV_stages)
-            # desired_column = df_train["patient_id"]
-            #
-            #
-            # df_train.drop(columns=["patient_id"], inplace=True)
-            #
-            #
-            # df_train.insert(0, "patient_id", desired_column)
-            # desired_column = df_train["status"]
-            # df_train.drop(columns=["status"], inplace=True)
-
-            # df_train["status"] = desired_column
-
-            #df_train.to_csv('../data/multimodal_dataset_IVStages.csv', index=False)
-            y_train_full = df_train["status"]
-            df_train.drop(columns=["status"], inplace=True)
-            path_with_label = os.path.join(path_with_label, "clin_gen")
-            os.makedirs(path_with_label, exist_ok=True)
-            classifiers_list = training_models(df_train, y_train_full, loocv, path_with_label,
-                                               radiomic_training=False)
-
-        else: classifiers_list = training_models(df_train_full[training_features], y_train_full, loocv, path_with_label,
+        classifiers_list = training_models(df_train_full[training_features], y_train_full, loocv, path_with_label,
                                                radiomic_training=True)
 
         if not loocv:
