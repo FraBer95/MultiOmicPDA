@@ -1,0 +1,2 @@
+pathologic_stage_reclass_2,residual_disease_reclass,tumor_grade_reclass
+"Index(['Stage IB/IIA/IIB', 'Stage III/IIIB/IV'], dtype='object')","Index(['R1/R2', 'R0', 'RX'], dtype='object')","Index(['G1/G2', 'G3/G4'], dtype='object')"
