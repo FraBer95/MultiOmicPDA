@@ -1,4 +1,5 @@
 # MultiOmicPDA
+**New**: Check our last work on genetic mutation predictions in PDA with pathomic and transcriptomic data! -> https://github.com/FraBer95/MultimodalMutationsPDAC
 
 This is the repository of the "A time-dependent explainable radiomic analysis from the multi-omic cohort of CPTAC-Pancreatic Ductal Adenocarcinoma" paper.
 
